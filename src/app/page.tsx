@@ -30,7 +30,7 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setIsLoggedIn(true);
-        setIsAdmin(session.user.email === 'admin233@gmail.com');
+        setIsAdmin(['admin233@gmail.com', 'adminat233@gmail.com'].includes(session.user.email || ''));
       }
     };
     checkUser();

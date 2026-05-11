@@ -28,7 +28,8 @@ export default function Login() {
       if (error) throw error;
 
       if (data.user) {
-        if (data.user.email === 'admin233@gmail.com') {
+        const isAdmin = ['admin233@gmail.com', 'adminat233@gmail.com'].includes(data.user.email || '');
+        if (isAdmin) {
           router.push('/command-center');
         } else {
           router.push('/dashboard');

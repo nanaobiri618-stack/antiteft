@@ -50,7 +50,8 @@ export default function CommandCenter() {
         router.push('/login');
         return;
       }
-      if (session.user.email !== 'admin233@gmail.com') {
+      const isAdmin = ['admin233@gmail.com', 'adminat233@gmail.com'].includes(session.user.email || '');
+      if (!isAdmin) {
         router.push('/dashboard');
         return;
       }
