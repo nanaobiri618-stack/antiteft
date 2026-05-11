@@ -109,9 +109,14 @@ export default function Dashboard() {
   async function sendCommand(deviceId: string, command: string) {
     if (!deviceId) return;
     try {
+      const updates: any = { pending_command: command };
+      if (['ALARM', 'LOCK', 'FAKE_POWER', 'SPEAK'].includes(command)) {
+        updates.status = 'Lost';
+      }
+
       const { error } = await supabase
         .from('devices')
-        .update({ last_command: command, command_timestamp: new Date().toISOString() })
+        .update(updates)
         .eq('id', deviceId);
 
       if (error) throw error;
