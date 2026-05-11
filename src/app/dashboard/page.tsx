@@ -344,9 +344,20 @@ export default function Dashboard() {
                         </div>
                         <div className="flex-1 overflow-hidden">
                           <span className="block text-sm font-black truncate tracking-tight">{device.model || 'Unknown Device'}</span>
-                          <span className="block text-[9px] font-bold uppercase tracking-widest opacity-60">
-                            ID: {device.id.slice(0, 8)}
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${new Date(device.last_seen).getTime() > Date.now() - 300000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                            <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">
+                              {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }) : 'Never seen'}
+                            </span>
+                          </div>
+                          {device.pending_command && (
+                            <div className="mt-1 flex items-center gap-1">
+                              <span className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
+                              <span className="text-[8px] font-black text-red-600 uppercase tracking-widest bg-red-100/50 px-1.5 rounded">
+                                Pending: {device.pending_command}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </button>
                     ))}
