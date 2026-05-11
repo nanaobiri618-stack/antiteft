@@ -106,8 +106,11 @@ export default function Dashboard() {
     router.push('/login');
   }
 
+  const [commandLoading, setCommandLoading] = useState<string | null>(null);
+
   async function sendCommand(deviceId: string, command: string) {
     if (!deviceId) return;
+    setCommandLoading(command);
     try {
       const updates: any = { pending_command: command };
       if (['ALARM', 'LOCK', 'FAKE_POWER', 'SPEAK'].includes(command)) {
@@ -120,10 +123,12 @@ export default function Dashboard() {
         .eq('id', deviceId);
 
       if (error) throw error;
-      alert(`Command ${command} transmitted successfully.`);
+      // Success feedback
     } catch (error) {
       console.error('Error sending command:', error);
       alert('Failed to transmit command. Check connection.');
+    } finally {
+      setCommandLoading(null);
     }
   }
 
@@ -167,7 +172,7 @@ export default function Dashboard() {
       
       {/* Background Map */}
       <div className="absolute inset-0 z-0 h-full w-full">
-        <DashboardMap devices={devices} />
+        <DashboardMap devices={devices} selectedDeviceId={selectedDevice?.id} />
       </div>
 
       {/* Top Status Card */}
@@ -389,18 +394,18 @@ export default function Dashboard() {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pb-12">
             <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-              <ActionButton icon={<Volume2 className="w-8 h-8" />} label="Siren" onClick={() => sendCommand(selectedDevice?.id, 'ALARM')} desc="Trigger panic alarm" color="bg-white hover:bg-blue-600 hover:text-white text-blue-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Lock className="w-8 h-8" />} label="Lockdown" onClick={() => sendCommand(selectedDevice?.id, 'LOCK')} desc="Remote device lock" color="bg-white hover:bg-orange-600 hover:text-white text-orange-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<MapPin className="w-8 h-8" />} label="Locate" onClick={() => sendCommand(selectedDevice?.id, 'LOCATE')} desc="Triangulate node" color="bg-white hover:bg-emerald-600 hover:text-white text-emerald-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Activity className="w-8 h-8" />} label="Track" onClick={() => sendCommand(selectedDevice?.id, 'TRACK')} desc="Continuous logging" color="bg-white hover:bg-purple-600 hover:text-white text-purple-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<X className="w-8 h-8" />} label="Wipe" onClick={() => sendCommand(selectedDevice?.id, 'WIPE')} desc="Purge device data" color="bg-white hover:bg-red-600 hover:text-white text-red-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Power className="w-8 h-8" />} label="Fake Off" onClick={() => sendCommand(selectedDevice?.id, 'FAKE_POWER')} desc="Simulate shutdown" color="bg-white hover:bg-zinc-900 hover:text-white text-zinc-900 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Volume2 className="w-8 h-8" />} label="Speak" onClick={() => sendCommand(selectedDevice?.id, 'SPEAK')} desc="Voice transmission" color="bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Shield className="w-8 h-8" />} label="Found" onClick={() => sendCommand(selectedDevice?.id, 'FOUND')} desc="Clear status logs" color="bg-white hover:bg-teal-600 hover:text-white text-teal-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Smartphone className="w-8 h-8" />} label="Nearby" onClick={() => sendCommand(selectedDevice?.id, 'SCAN_NEARBY')} desc="Bluetooth scan" color="bg-white hover:bg-pink-600 hover:text-white text-pink-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<Database className="w-8 h-8" />} label="Network" onClick={() => sendCommand(selectedDevice?.id, 'SCAN_NETWORK')} desc="Analyze carriers" color="bg-white hover:bg-amber-600 hover:text-white text-amber-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<AlertTriangle className="w-8 h-8" />} label="Signal" onClick={() => sendCommand(selectedDevice?.id, 'CALL_SIGNAL')} desc="Force tower ping" color="bg-white hover:bg-rose-600 hover:text-white text-rose-600 border-slate-100 shadow-sm" />
-              <ActionButton icon={<RotateCcw className="w-8 h-8" />} label="Reset" onClick={() => sendCommand(selectedDevice?.id, 'RESET')} desc="Soft node reboot" color="bg-white hover:bg-slate-400 hover:text-white text-slate-400 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Volume2 className="w-8 h-8" />} label="Siren" onClick={() => sendCommand(selectedDevice?.id, 'ALARM')} desc="Trigger panic alarm" isLoading={commandLoading === 'ALARM'} color="bg-white hover:bg-blue-600 hover:text-white text-blue-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Lock className="w-8 h-8" />} label="Lockdown" onClick={() => sendCommand(selectedDevice?.id, 'LOCK')} desc="Remote device lock" isLoading={commandLoading === 'LOCK'} color="bg-white hover:bg-orange-600 hover:text-white text-orange-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<MapPin className="w-8 h-8" />} label="Locate" onClick={() => sendCommand(selectedDevice?.id, 'LOCATE')} desc="Triangulate node" isLoading={commandLoading === 'LOCATE'} color="bg-white hover:bg-emerald-600 hover:text-white text-emerald-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Activity className="w-8 h-8" />} label="Track" onClick={() => sendCommand(selectedDevice?.id, 'TRACK')} desc="Continuous logging" isLoading={commandLoading === 'TRACK'} color="bg-white hover:bg-purple-600 hover:text-white text-purple-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<X className="w-8 h-8" />} label="Wipe" onClick={() => sendCommand(selectedDevice?.id, 'WIPE')} desc="Purge device data" isLoading={commandLoading === 'WIPE'} color="bg-white hover:bg-red-600 hover:text-white text-red-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Power className="w-8 h-8" />} label="Fake Off" onClick={() => sendCommand(selectedDevice?.id, 'FAKE_POWER')} desc="Simulate shutdown" isLoading={commandLoading === 'FAKE_POWER'} color="bg-white hover:bg-zinc-900 hover:text-white text-zinc-900 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Volume2 className="w-8 h-8" />} label="Speak" onClick={() => sendCommand(selectedDevice?.id, 'SPEAK')} desc="Voice transmission" isLoading={commandLoading === 'SPEAK'} color="bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Shield className="w-8 h-8" />} label="Found" onClick={() => sendCommand(selectedDevice?.id, 'FOUND')} desc="Clear status logs" isLoading={commandLoading === 'FOUND'} color="bg-white hover:bg-teal-600 hover:text-white text-teal-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Smartphone className="w-8 h-8" />} label="Nearby" onClick={() => sendCommand(selectedDevice?.id, 'SCAN_NEARBY')} desc="Bluetooth scan" isLoading={commandLoading === 'SCAN_NEARBY'} color="bg-white hover:bg-pink-600 hover:text-white text-pink-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<Database className="w-8 h-8" />} label="Network" onClick={() => sendCommand(selectedDevice?.id, 'SCAN_NETWORK')} desc="Analyze carriers" isLoading={commandLoading === 'SCAN_NETWORK'} color="bg-white hover:bg-amber-600 hover:text-white text-amber-600 border-amber-100 shadow-sm" />
+              <ActionButton icon={<AlertTriangle className="w-8 h-8" />} label="Signal" onClick={() => sendCommand(selectedDevice?.id, 'CALL_SIGNAL')} desc="Force tower ping" isLoading={commandLoading === 'CALL_SIGNAL'} color="bg-white hover:bg-rose-600 hover:text-white text-rose-600 border-slate-100 shadow-sm" />
+              <ActionButton icon={<RotateCcw className="w-8 h-8" />} label="Reset" onClick={() => sendCommand(selectedDevice?.id, 'RESET')} desc="Soft node reboot" isLoading={commandLoading === 'RESET'} color="bg-white hover:bg-slate-400 hover:text-white text-slate-400 border-slate-100 shadow-sm" />
             </div>
           </div>
 
@@ -437,19 +442,26 @@ export default function Dashboard() {
   );
 }
 
-function ActionButton({ icon, label, onClick, color, desc }: { icon: any, label: string, onClick: () => void, color: string, desc: string }) {
+function ActionButton({ icon, label, onClick, color, desc, isLoading }: { icon: any, label: string, onClick: () => void, color: string, desc: string, isLoading?: boolean }) {
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-3 p-6 sm:p-8 rounded-[2.5rem] border transition-all hover:scale-[1.03] active:scale-95 ${color} group relative overflow-hidden`}
+      disabled={isLoading}
+      className={`flex flex-col items-center justify-center gap-3 p-6 sm:p-8 rounded-[2.5rem] border transition-all hover:scale-[1.03] active:scale-95 ${color} group relative overflow-hidden ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <div className="absolute inset-0 bg-current opacity-0 group-active:opacity-5 transition-opacity" />
       <div className="relative z-10">
-        {icon}
+        {isLoading ? (
+          <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ) : (
+          icon
+        )}
       </div>
       <div className="text-center relative z-10">
         <span className="block text-xs font-black uppercase tracking-widest mb-1">{label}</span>
-        <span className="block text-[8px] font-bold uppercase tracking-tight opacity-40 group-hover:opacity-60 transition-opacity">{desc}</span>
+        <span className="block text-[8px] font-bold uppercase tracking-tight opacity-40 group-hover:opacity-60 transition-opacity">
+          {isLoading ? 'Transmitting...' : desc}
+        </span>
       </div>
     </button>
   );

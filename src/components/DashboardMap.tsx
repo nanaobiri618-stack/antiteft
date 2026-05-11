@@ -25,20 +25,16 @@ function ChangeView({ center }: { center: [number, number] }) {
   return null;
 }
 
-export default function DashboardMap({ devices }: { devices: any[] }) {
+export default function DashboardMap({ devices, selectedDeviceId }: { devices: any[], selectedDeviceId?: string }) {
   const defaultCenter: [number, number] = [5.6037, -0.1870]; // Accra, Ghana as default
 
-  // Robust filtering to avoid "Null Island" (0,0) and invalid coordinates
-  const activeDevices = devices.filter(d => 
-    d.current_lat !== null && 
-    d.current_lng !== null && 
-    Math.abs(d.current_lat) > 0.0001 && 
-    Math.abs(d.current_lng) > 0.0001
-  );
-
-  const center = activeDevices.length > 0 
-    ? [activeDevices[0].current_lat, activeDevices[0].current_lng] as [number, number]
-    : defaultCenter;
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+  
+  const center = selectedDevice && selectedDevice.current_lat && selectedDevice.current_lng
+    ? [selectedDevice.current_lat, selectedDevice.current_lng] as [number, number]
+    : devices.length > 0 && devices[0].current_lat && devices[0].current_lng
+      ? [devices[0].current_lat, devices[0].current_lng] as [number, number]
+      : defaultCenter;
 
   return (
     <div className="w-full h-full relative bg-zinc-950">
