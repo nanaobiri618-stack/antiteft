@@ -115,7 +115,7 @@ export default function Dashboard() {
     setCommandLoading(command);
     try {
       const updates: any = { pending_command: command };
-      if (['ALARM', 'LOCK', 'FAKE_POWER', 'SPEAK'].includes(command)) {
+      if (['ALARM', 'LOCK', 'FAKE_POWER', 'SPEAK', 'LOCATE', 'WIPE', 'SCAN_NEARBY', 'SCAN_NETWORK', 'CALL_SIGNAL'].includes(command)) {
         updates.status = 'Lost';
       }
 
