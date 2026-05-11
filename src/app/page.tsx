@@ -26,7 +26,11 @@ export default function Home() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.push('/dashboard');
+        if (session.user.email === 'admin233@gmail.com') {
+          router.push('/command-center');
+        } else {
+          router.push('/dashboard');
+        }
       }
     };
     checkUser();

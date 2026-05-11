@@ -79,6 +79,7 @@ export default function Dashboard() {
       const { data: devicesData, error: devicesError } = await supabase
         .from('devices')
         .select('*')
+        .eq('user_id', user.id)
         .order('last_seen', { ascending: false });
 
       if (devicesError) throw devicesError;
@@ -166,7 +167,7 @@ export default function Dashboard() {
           <nav className="flex-1 space-y-2">
             <button className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 rounded-xl font-bold">
               <LayoutDashboard className="w-5 h-5" />
-              Command Center
+              My Dashboard
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all rounded-xl font-bold">
               <Bell className="w-5 h-5" />
@@ -189,7 +190,7 @@ export default function Dashboard() {
               </div>
               <div className="flex-1 overflow-hidden">
                 <p className="text-xs font-black truncate">{user.email?.split('@')[0]}</p>
-                <p className="text-[10px] text-slate-400 truncate">Premium Admin</p>
+                <p className="text-[10px] text-slate-400 truncate">Secured User</p>
               </div>
             </div>
             <button 
@@ -215,7 +216,7 @@ export default function Dashboard() {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h2 className="text-lg font-black tracking-tight text-slate-900 hidden sm:block">Fleet Intelligence Dashboard</h2>
+            <h2 className="text-lg font-black tracking-tight text-slate-900 hidden sm:block">Personal Security Dashboard</h2>
           </div>
 
           <div className="flex items-center gap-4">

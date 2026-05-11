@@ -34,8 +34,7 @@ export default function Signup() {
       if (error) throw error;
 
       if (data.user) {
-        alert('Signup successful! Please check your email for verification.');
-        router.push('/login');
+        router.push('/dashboard');
       }
     } catch (err: any) {
       setError(err.message);
