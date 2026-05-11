@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.icon({
@@ -63,12 +64,14 @@ export default function DashboardMap({ devices, selectedDeviceId }: { devices: a
           <Marker key={device.id} position={[device.current_lat, device.current_lng]}>
             <Popup>
               <div className="text-zinc-900 p-1">
-                <p className="font-bold text-sm mb-1">{device.model || 'Unknown Device'}</p>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <div className={`w-2 h-2 rounded-full ${device.status === 'Active' ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                  <span className="text-xs font-medium uppercase tracking-wider">{device.status || 'Active'}</span>
+                <p className="font-black text-xs uppercase tracking-tight mb-1 border-b pb-1">{device.model || 'Unknown Device'}</p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${device.last_seen && new Date(device.last_seen).getTime() > Date.now() - 300000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }) : 'Never seen'}
+                  </p>
                 </div>
-                <p className="text-[10px] text-zinc-500 font-mono">ID: {device.id.slice(0, 12)}...</p>
+                <p className="text-[10px] text-zinc-500 font-mono mt-2">ID: {device.id.slice(0, 12)}...</p>
               </div>
             </Popup>
           </Marker>
