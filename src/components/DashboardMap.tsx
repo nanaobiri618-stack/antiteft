@@ -36,6 +36,13 @@ export default function DashboardMap({ devices, selectedDeviceId }: { devices: a
       ? [devices[0].current_lat, devices[0].current_lng] as [number, number]
       : defaultCenter;
 
+  const activeDevices = devices.filter(d => 
+    d.current_lat !== null && 
+    d.current_lng !== null && 
+    Math.abs(d.current_lat) > 0.0001 && 
+    Math.abs(d.current_lng) > 0.0001
+  );
+
   return (
     <div className="w-full h-full relative bg-zinc-950">
       <MapContainer 
@@ -52,7 +59,7 @@ export default function DashboardMap({ devices, selectedDeviceId }: { devices: a
         
         <ChangeView lat={center[0]} lng={center[1]} />
         
-        {activeDevices.map((device) => (
+        {activeDevices.map((device: any) => (
           <Marker key={device.id} position={[device.current_lat, device.current_lng]}>
             <Popup>
               <div className="text-zinc-900 p-1">
