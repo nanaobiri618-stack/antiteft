@@ -20,25 +20,6 @@ export default function Login() {
     setError(null);
 
     try {
-      if (email === 'admin233@gmail.com' && password === 'ad@2000') {
-        // Special case for admin login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) {
-          // If the user doesn't exist yet, we might need to handle it, 
-          // but for now let's assume it works or handle the error
-          throw error;
-        }
-
-        if (data.user) {
-          router.push('/command-center');
-          return;
-        }
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -47,7 +28,11 @@ export default function Login() {
       if (error) throw error;
 
       if (data.user) {
-        router.push('/dashboard');
+        if (data.user.email === 'admin233@gmail.com') {
+          router.push('/command-center');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err: any) {
       setError(err.message);

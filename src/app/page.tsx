@@ -15,22 +15,22 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const router = useRouter();
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        if (session.user.email === 'admin233@gmail.com') {
-          router.push('/command-center');
-        } else {
-          router.push('/dashboard');
-        }
+        setIsLoggedIn(true);
+        setIsAdmin(session.user.email === 'admin233@gmail.com');
       }
     };
     checkUser();
@@ -126,10 +126,10 @@ export default function Home() {
               </a>
               
               <Link 
-                href="/login"
+                href={isLoggedIn ? (isAdmin ? "/command-center" : "/dashboard") : "/login"}
                 className="group h-16 px-10 rounded-2xl border border-slate-200 bg-white text-slate-900 font-bold transition-all hover:bg-slate-50 flex items-center justify-center gap-2 shadow-sm"
               >
-                Access Dashboard
+                {isLoggedIn ? (isAdmin ? "Go to Command Center" : "Go to Dashboard") : "Access Dashboard"}
                 <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
