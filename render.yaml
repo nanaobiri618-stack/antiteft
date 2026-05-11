@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: antitheft-web
+    name: antitheftpro
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm run start
