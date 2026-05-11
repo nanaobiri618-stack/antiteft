@@ -15,13 +15,13 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-function ChangeView({ center }: { center: [number, number] }) {
+function ChangeView({ lat, lng }: { lat: number, lng: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center[0] !== 0 || center[1] !== 0) {
-      map.setView(center, map.getZoom());
+    if (lat !== 0 || lng !== 0) {
+      map.setView([lat, lng], map.getZoom());
     }
-  }, [center, map]);
+  }, [lat, lng, map]);
   return null;
 }
 
@@ -50,7 +50,7 @@ export default function DashboardMap({ devices, selectedDeviceId }: { devices: a
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         
-        <ChangeView center={center} />
+        <ChangeView lat={center[0]} lng={center[1]} />
         
         {activeDevices.map((device) => (
           <Marker key={device.id} position={[device.current_lat, device.current_lng]}>
