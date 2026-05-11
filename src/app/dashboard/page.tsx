@@ -425,7 +425,7 @@ export default function Dashboard() {
           background: #cbd5e1;
         }
         .leaflet-container {
-          filter: grayscale(0.2) contrast(1.1);
+          background: #f8fafc;
         }
       `}</style>
     </div>
