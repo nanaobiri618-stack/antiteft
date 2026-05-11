@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [intelOpen, setIntelOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function Dashboard() {
         return;
       }
       setUser(session.user);
-      fetchData();
+      fetchData(session.user.id);
     };
 
     checkUser();
@@ -58,13 +59,16 @@ export default function Dashboard() {
         router.push('/login');
       } else {
         setUser(session.user);
+        fetchData(session.user.id);
       }
     });
 
     const devicesSubscription = supabase
       .channel('public:devices')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, () => {
-        fetchData();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, (payload: any) => {
+        if (payload.new && (payload.new.user_id === user?.id || payload.old?.user_id === user?.id)) {
+          fetchData();
+        }
       })
       .subscribe();
 
@@ -74,12 +78,15 @@ export default function Dashboard() {
     };
   }, []);
 
-  async function fetchData() {
+  async function fetchData(userId?: string) {
+    const idToUse = userId || user?.id;
+    if (!idToUse) return;
+
     try {
       const { data: devicesData, error: devicesError } = await supabase
         .from('devices')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', idToUse)
         .order('last_seen', { ascending: false });
 
       if (devicesError) throw devicesError;
@@ -168,6 +175,12 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
              <button 
+               onClick={() => setIntelOpen(true)}
+               className="px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-colors"
+             >
+               View Intel
+             </button>
+             <button 
                onClick={() => setSidebarOpen(!sidebarOpen)}
                className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-400 transition-colors"
              >
@@ -176,6 +189,49 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Intelligence Overlay (OSINT Report) */}
+      <AnimatePresence>
+        {intelOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md"
+          >
+            <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-600 rounded-xl">
+                    <Database className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-black uppercase tracking-tight">Intelligence Report</h2>
+                </div>
+                <button onClick={() => setIntelOpen(false)} className="p-2 hover:bg-white rounded-xl shadow-sm transition-all">
+                  <X className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/50">
+                <div className="font-mono text-[11px] text-slate-600 leading-relaxed space-y-4">
+                  {selectedDevice?.status ? (
+                    <pre className="whitespace-pre-wrap bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                      {selectedDevice.status}
+                    </pre>
+                  ) : (
+                    <div className="text-center py-20">
+                      <Activity className="w-12 h-12 text-slate-200 mx-auto mb-4 animate-pulse" />
+                      <p className="font-bold text-slate-400 uppercase tracking-widest">No intelligence records found for this node.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="p-6 bg-white border-t border-slate-100 text-center">
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">End of Intelligence Feed • {new Date().toLocaleTimeString()}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Sidebar (Profile/Logout) */}
       <AnimatePresence>

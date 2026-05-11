@@ -114,24 +114,37 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto"
+              className="flex flex-col items-center gap-6 w-full"
             >
-              <a
-                href="/app-debug.apk"
-                className="group relative flex h-16 items-center justify-center gap-3 rounded-2xl bg-slate-900 px-10 text-white font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-900/20"
-                download
-              >
-                <Download className="w-5 h-5 transition-transform group-hover:translate-y-1" />
-                Download APK
-              </a>
+              <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto">
+                <a
+                  href="/app-debug.apk"
+                  className="group relative flex h-16 items-center justify-center gap-3 rounded-2xl bg-slate-900 px-10 text-white font-bold transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-900/20"
+                  download
+                >
+                  <div className="flex flex-col items-start leading-none">
+                    <span className="text-xs font-black uppercase tracking-widest text-red-500 mb-1">Latest Version v2.5</span>
+                    <div className="flex items-center gap-2">
+                      <Download className="w-5 h-5 transition-transform group-hover:translate-y-1" />
+                      <span>Download APK</span>
+                    </div>
+                  </div>
+                </a>
+                
+                <Link 
+                  href={isLoggedIn ? (isAdmin ? "/command-center" : "/dashboard") : "/login"}
+                  className="group h-16 px-10 rounded-2xl border border-slate-200 bg-white text-slate-900 font-bold transition-all hover:bg-slate-50 flex items-center justify-center gap-2 shadow-sm"
+                >
+                  {isLoggedIn ? (isAdmin ? "Go to Command Center" : "Go to Dashboard") : "Access Dashboard"}
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </div>
               
-              <Link 
-                href={isLoggedIn ? (isAdmin ? "/command-center" : "/dashboard") : "/login"}
-                className="group h-16 px-10 rounded-2xl border border-slate-200 bg-white text-slate-900 font-bold transition-all hover:bg-slate-50 flex items-center justify-center gap-2 shadow-sm"
-              >
-                {isLoggedIn ? (isAdmin ? "Go to Command Center" : "Go to Dashboard") : "Access Dashboard"}
-                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+              <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> Build 5/11/2026</span>
+                <span>Size: 8.2 MB</span>
+                <span>SHA-256 Verified</span>
+              </div>
             </motion.div>
           </div>
         </section>
