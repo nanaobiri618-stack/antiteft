@@ -123,7 +123,7 @@ export default function Home() {
                   download
                 >
                   <div className="flex flex-col items-start leading-none">
-                    <span className="text-xs font-black uppercase tracking-widest text-red-500 mb-1">Latest Version v2.5</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-red-500 mb-1">Latest Version v3.0</span>
                     <div className="flex items-center gap-2">
                       <Download className="w-5 h-5 transition-transform group-hover:translate-y-1" />
                       <span>Download APK</span>
@@ -141,7 +141,7 @@ export default function Home() {
               </div>
               
               <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> Build 5/11/2026</span>
+                <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> Build 5/12/2026</span>
                 <span>Size: 8.2 MB</span>
                 <span>SHA-256 Verified</span>
               </div>
