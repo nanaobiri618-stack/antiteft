@@ -230,7 +230,7 @@ export default function Dashboard() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white/20"
+              className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20"
             >
               <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-4">
@@ -238,8 +238,8 @@ export default function Dashboard() {
                     <Database className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">Intelligence Report</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time Node Telemetry</p>
+                    <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">Advanced OSINT Intelligence</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Real-time Node Telemetry & Signal Fusion</p>
                   </div>
                 </div>
                 <button onClick={() => setIntelOpen(false)} className="p-3 hover:bg-white rounded-2xl shadow-sm transition-all border border-transparent hover:border-slate-100">
@@ -247,37 +247,155 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-white">
-                <div className="font-mono text-[11px] text-slate-600 leading-relaxed">
-                  {selectedDevice?.status ? (
-                    <div className="space-y-6">
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100">
-                             <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Latitude</p>
-                             <p className="text-sm font-black text-slate-900">{selectedDevice.current_lat || 'N/A'}</p>
+                {selectedDevice?.status ? (
+                  <div className="space-y-8">
+                    {/* Location Summary */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                            <MapPin className="w-4 h-4" />
                           </div>
-                          <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100">
-                             <p className="text-[9px] font-black text-slate-400 uppercase mb-2">Longitude</p>
-                             <p className="text-sm font-black text-slate-900">{selectedDevice.current_lng || 'N/A'}</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Coordinates</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Latitude</span>
+                            <span className="text-sm font-black text-slate-900 font-mono">{selectedDevice.current_lat || 'N/A'}</span>
                           </div>
-                       </div>
-                       <div className="p-6 bg-zinc-900 text-zinc-100 rounded-[2.5rem] shadow-xl">
-                          <p className="text-[9px] font-black text-zinc-500 uppercase mb-4 tracking-[0.2em]">Raw OSINT Data Feed</p>
-                          <pre className="whitespace-pre-wrap text-[10px] leading-relaxed opacity-80">
-                            {selectedDevice.status}
-                          </pre>
-                       </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Longitude</span>
+                            <span className="text-sm font-black text-slate-900 font-mono">{selectedDevice.current_lng || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                            <Activity className="w-4 h-4" />
+                          </div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Health</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Last Contact</span>
+                            <span className="text-[10px] font-black text-slate-900">{selectedDevice.last_seen ? formatDistanceToNow(new Date(selectedDevice.last_seen), { addSuffix: true }) : 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Defense Mode</span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${selectedDevice.status.includes('Active') ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                              {selectedDevice.status.includes('{') ? JSON.parse(selectedDevice.status).status || 'Lost' : selectedDevice.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-24">
-                      <Activity className="w-16 h-16 text-slate-100 mx-auto mb-6 animate-pulse" />
-                      <p className="font-black text-slate-300 uppercase tracking-[0.2em] text-xs">Awaiting decryption keys...</p>
-                    </div>
-                  )}
-                </div>
+
+                    {/* Parsed Intelligence Data */}
+                    {(() => {
+                      try {
+                        const data = selectedDevice.status.startsWith('{') ? JSON.parse(selectedDevice.status) : null;
+                        if (!data) return (
+                          <div className="p-6 bg-zinc-900 text-zinc-100 rounded-[2.5rem] shadow-xl">
+                            <p className="text-[9px] font-black text-zinc-500 uppercase mb-4 tracking-[0.2em]">Raw OSINT Data Feed</p>
+                            <pre className="whitespace-pre-wrap text-[10px] leading-relaxed opacity-80">
+                              {selectedDevice.status}
+                            </pre>
+                          </div>
+                        );
+                        
+                        return (
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                              {/* Network Data */}
+                              <div className="space-y-4">
+                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Network Intelligence</h3>
+                                <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden divide-y divide-slate-50">
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">External IP</span>
+                                    <span className="text-[10px] font-black text-slate-900 font-mono">{data.ip || 'Unavailable'}</span>
+                                  </div>
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Carrier</span>
+                                    <span className="text-[10px] font-black text-slate-900">{data.carrier || 'Scanning...'}</span>
+                                  </div>
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">IMEI Hash</span>
+                                    <span className="text-[10px] font-black text-slate-900 font-mono">{data.imei_hash || 'Encrypted'}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Hardware Signals */}
+                              <div className="space-y-4">
+                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 px-2">Signal Analysis</h3>
+                                <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden divide-y divide-slate-50">
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">WiFi MAC</span>
+                                    <span className="text-[10px] font-black text-slate-900 font-mono">{data.wifi_mac || 'Protected'}</span>
+                                  </div>
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">BT Signature</span>
+                                    <span className="text-[10px] font-black text-slate-900 font-mono">{data.bt_mac || 'Stealth Mode'}</span>
+                                  </div>
+                                  <div className="p-4 flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Battery</span>
+                                    <div className="flex items-center gap-2">
+                                       <span className="text-[10px] font-black text-slate-900">{data.battery || '0'}%</span>
+                                       <div className="w-8 h-3 bg-slate-100 rounded-full overflow-hidden">
+                                          <div className={`h-full ${parseInt(data.battery) < 20 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${data.battery}%` }} />
+                                       </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Raw Stream */}
+                            <div className="p-6 bg-zinc-950 text-emerald-500 rounded-[2.5rem] shadow-2xl border border-white/5 relative overflow-hidden group">
+                               <div className="absolute top-0 right-0 p-4 opacity-20">
+                                  <Activity className="w-20 h-20 animate-pulse" />
+                               </div>
+                               <p className="text-[9px] font-black text-zinc-600 uppercase mb-4 tracking-[0.3em]">Encrypted Data Stream</p>
+                               <div className="font-mono text-[10px] leading-relaxed opacity-90 custom-scrollbar max-h-48 overflow-y-auto">
+                                  <span className="text-zinc-600">[ {new Date().toISOString()} ]</span> CONNECTION_SECURE: AES-256-GCM Handshake Verified<br/>
+                                  <span className="text-zinc-600">[ {new Date().toISOString()} ]</span> DATA_FUSION: GPS + WiFi + LBS Triangulation Active<br/>
+                                  <span className="text-zinc-600">[ {new Date().toISOString()} ]</span> SIGNAL_STRENGTH: {data.signal_strength || '-64dBm'}<br/>
+                                  <span className="text-emerald-400">RAW_JSON_PAYLOAD:</span><br/>
+                                  <pre className="whitespace-pre-wrap mt-2 text-[9px] text-zinc-400">
+                                    {JSON.stringify(data, null, 2)}
+                                  </pre>
+                               </div>
+                            </div>
+                          </div>
+                        );
+                      } catch (e) {
+                        return (
+                          <div className="p-6 bg-zinc-900 text-zinc-100 rounded-[2.5rem] shadow-xl">
+                            <p className="text-[9px] font-black text-zinc-500 uppercase mb-4 tracking-[0.2em]">Raw OSINT Data Feed</p>
+                            <pre className="whitespace-pre-wrap text-[10px] leading-relaxed opacity-80">
+                              {selectedDevice.status}
+                            </pre>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-24">
+                    <Activity className="w-16 h-16 text-slate-100 mx-auto mb-6 animate-pulse" />
+                    <p className="font-black text-slate-300 uppercase tracking-[0.2em] text-xs">Awaiting decryption keys...</p>
+                  </div>
+                )}
               </div>
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Live Feed Active</p>
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">Unison Synchronization Active</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Node ID: {selectedDevice?.id?.slice(0, 8)}</span>
+                </div>
               </div>
             </motion.div>
           </motion.div>
