@@ -28,6 +28,7 @@ import {
 import dynamic from 'next/dynamic';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { LocalizationEngine, SensorData } from '@/lib/localization-engine';
 
 const DashboardMap = dynamic(() => import('@/components/DashboardMap'), { 
   ssr: false,
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [gridState, setGridState] = useState<'min' | 'mid' | 'max'>('mid');
   const [intelOpen, setIntelOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -72,6 +74,14 @@ export default function Dashboard() {
         fetchData();
       })
       .subscribe();
+      
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+        (err) => console.error('Browser Geo Error:', err),
+        { enableHighAccuracy: true }
+      );
+    }
 
     return () => {
       subscription.unsubscribe();
@@ -93,8 +103,14 @@ export default function Dashboard() {
       if (devicesError) throw devicesError;
       setDevices(devicesData || []);
       
-      if (devicesData && devicesData.length > 0 && !selectedDevice) {
-        setSelectedDevice(devicesData[0]);
+      if (devicesData && devicesData.length > 0) {
+        const currentDevice = selectedDevice || devicesData[0];
+        setSelectedDevice(currentDevice);
+        
+        // If device is in Lost mode, trigger peer detection fusion
+        if (currentDevice.status?.includes('Lost') || currentDevice.status?.includes('HYBRID')) {
+          fetchPeerDetections(currentDevice.id);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -134,17 +150,84 @@ export default function Dashboard() {
     }
   }
 
+  async function fetchPeerDetections(deviceId: string) {
+    try {
+      const { data: logs, error } = await supabase
+        .from('location_logs')
+        .select('*')
+        .eq('device_id', deviceId)
+        .like('status', 'PEER-DETECTION%')
+        .order('recorded_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      if (logs && logs.length > 0) {
+        const engine = new LocalizationEngine();
+        const sensors: SensorData[] = logs.map(l => {
+          const rssiPart = l.status.match(/RSSI: (-?\d+)/);
+          const rssi = rssiPart ? parseInt(rssiPart[1]) : -80;
+          return { lat: l.lat, lng: l.lng, rssi };
+        });
+
+        const result = engine.findPreciseLocation(sensors);
+        if (result && result.confidence > 0.3) {
+          setSelectedDevice((prev: any) => ({
+            ...prev,
+            current_lat: result.lat,
+            current_lng: result.lng,
+            fusion_status: `Fused via ${logs.length} peers (${(result.confidence * 100).toFixed(0)}% accuracy)`
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Peer fusion error:', err);
+    }
+  }
+
   function parseStatus(status: string) {
     if (!status) return { mainStatus: 'Unknown', intelligence: null };
-    try {
-      if (status.startsWith('{')) {
+    
+    // Check if it's JSON
+    if (status.startsWith('{')) {
+      try {
         const data = JSON.parse(status);
-        return { 
-          mainStatus: data.status || 'Active', 
-          intelligence: data 
-        };
-      }
-    } catch (e) {}
+        return { mainStatus: data.status || 'Active', intelligence: data };
+      } catch (e) {}
+    }
+
+    // Check if it's the advanced OSINT report format
+    if (status.includes('HYBRID-OSINT-IDENTIFICATION') || status.includes('IDENTITY & SIGNALS:')) {
+      const parts = status.split('\n');
+      const intelligence: any = {
+        wifi: [], wifiMac: [], bt: null, btMac: [], tower: [],
+        battery: null, charging: null, address: null, networkScan: null,
+        ip: null, ipCity: null, imei: null, simSerial: null,
+        operator: null, precision: null, coordinates: null,
+      };
+
+      parts.forEach(line => {
+        const t = line.trim();
+        if (t.startsWith('Address:'))         intelligence.address    = t.replace('Address:', '').trim();
+        if (t.startsWith('Coordinates:'))     intelligence.coordinates = t.replace('Coordinates:', '').trim();
+        if (t.startsWith('Status:'))          intelligence.precision  = t.replace('Status:', '').trim();
+        if (t.includes('WiFi:'))              intelligence.wifi.push(t.replace(/^.*WiFi:/, '').trim());
+        if (t.includes('WiFi-MAC:'))          intelligence.wifiMac.push(t.replace('WiFi-MAC:', '').trim());
+        if (t.includes('BT-MAC:'))            intelligence.btMac.push(t.replace('BT-MAC:', '').trim());
+        if (t.includes('Tower:'))             intelligence.tower.push(t.replace('Tower:', '').trim());
+        if (t.includes('Battery:'))           intelligence.battery    = t.replace('Battery:', '').trim();
+        if (t.includes('Charging:'))          intelligence.charging   = t.replace('Charging:', '').trim();
+        if (t.includes('BLE Waves:'))         intelligence.bt         = t.replace('BLE Waves:', '').trim();
+        if (t.includes('Network OSINT:'))     intelligence.networkScan = t.replace('Network OSINT:', '').trim();
+        if (t.includes('IP-Precise:'))        intelligence.ipCity     = t.replace('IP-Precise:', '').split('|')[0].trim();
+        if (t.startsWith('IP:'))              intelligence.ip         = t.replace('IP:', '').trim();
+        if (t.includes('IMEI-Identifier:'))   intelligence.imei       = t.replace('IMEI-Identifier:', '').trim();
+        if (t.includes('SIM-Serial:'))        intelligence.simSerial  = t.replace('SIM-Serial:', '').trim();
+        if (t.includes('Operator:'))          intelligence.operator   = t.replace('Operator:', '').trim();
+      });
+
+      return { mainStatus: 'Lost Mode Active', intelligence };
+    }
+
     return { mainStatus: status, intelligence: null };
   }
 
@@ -631,6 +714,32 @@ export default function Dashboard() {
              >
                {gridState === 'min' ? 'Expand Controls' : 'Hide Dashboard'}
              </button>
+          </div>
+
+          {/* Live Security Feed (Hardened) */}
+          <div className="mt-8 p-6 bg-slate-900 rounded-[2.5rem] border border-slate-800 relative overflow-hidden shadow-2xl">
+             <div className="absolute top-0 right-0 p-6 opacity-10">
+                <Shield className="w-20 h-20 text-red-600" />
+             </div>
+             <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-green-500" /> Live Security Intelligence Stream
+             </h4>
+             <div className="space-y-3 font-mono text-[10px]">
+                {devices.slice(0, 5).map((d, i) => {
+                  const isLost = d.status?.includes('HYBRID') || d.status === 'Lost';
+                  return (
+                    <div key={i} className="flex gap-4 text-slate-400 border-l-2 border-slate-800 pl-4 py-1 hover:border-red-600 transition-colors group">
+                       <span className="text-slate-600">[{d.last_seen ? new Date(d.last_seen).toLocaleTimeString() : 'N/A'}]</span>
+                       <span>
+                         NODE <span className="text-slate-100 font-black">{d.model || d.id.slice(0, 8)}</span>: 
+                         <span className={`ml-2 ${isLost ? 'text-red-500 font-black animate-pulse' : 'text-green-500 font-bold'}`}>
+                           {isLost ? 'EMERGENCY_RECOVERY_PROTOCOL' : 'SECURE_PROTECTION_ACTIVE'}
+                         </span>
+                       </span>
+                    </div>
+                  );
+                })}
+             </div>
           </div>
         </div>
       </motion.div>

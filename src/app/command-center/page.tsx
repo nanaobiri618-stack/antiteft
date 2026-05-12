@@ -186,7 +186,7 @@ export default function CommandCenter() {
       if (error) throw error;
       
       addAuditLog('DATABASE_UPDATE', `Device ${deviceId.slice(0,8)} pending_command set to ${command}`, 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending command:', error);
       addAuditLog('COMMAND_FAILED', `Failed to deploy ${command}: ${error.message}`, 'danger');
     }
@@ -194,16 +194,46 @@ export default function CommandCenter() {
 
   const parseStatus = (status: string) => {
     if (!status) return { mainStatus: 'Secure', intelligence: null };
+    
+    // Check if it's JSON
+    if (status.startsWith('{')) {
+      try {
+        const data = JSON.parse(status);
+        return { mainStatus: data.status || 'Active', intelligence: data };
+      } catch (e) {}
+    }
+
     if (status.includes('HYBRID-OSINT-IDENTIFICATION') || status.includes('IDENTITY & SIGNALS:')) {
       const parts = status.split('\n');
-      const intelligence: any = { wifi: [], bt: [], tower: [], battery: null, address: null, signals: [] };
+      const intelligence: any = { 
+        wifi: [], wifiMac: [], bt: null, btMac: [], tower: [], 
+        battery: null, charging: null, address: null, networkScan: null,
+        ip: null, ipCity: null, imei: null, simSerial: null,
+        operator: null, precision: null, coordinates: null,
+        signals: [] 
+      };
+      
       parts.forEach(line => {
-        if (line.startsWith('Address:')) intelligence.address = line.replace('Address:', '').trim();
-        if (line.includes('WiFi:')) intelligence.wifi.push(line.replace('WiFi:', '').trim());
-        if (line.includes('Tower:')) intelligence.tower.push(line.replace('Tower:', '').trim());
-        if (line.includes('Battery:')) intelligence.battery = line.replace('Battery:', '').trim();
-        if (line.includes('BLE Waves:')) intelligence.bt.push(line.replace('BLE Waves:', '').trim());
-        if (line.includes('RSSI=') || line.includes('dBm]')) intelligence.signals.push(line.trim());
+        const t = line.trim();
+        if (t.startsWith('Address:'))         intelligence.address    = t.replace('Address:', '').trim();
+        if (t.startsWith('Coordinates:'))     intelligence.coordinates = t.replace('Coordinates:', '').trim();
+        if (t.startsWith('Status:'))          intelligence.precision  = t.replace('Status:', '').trim();
+        if (t.includes('WiFi:'))              intelligence.wifi.push(t.replace(/^.*WiFi:/, '').trim());
+        if (t.includes('WiFi-MAC:'))          intelligence.wifiMac.push(t.replace('WiFi-MAC:', '').trim());
+        if (t.includes('BT-MAC:'))            intelligence.btMac.push(t.replace('BT-MAC:', '').trim());
+        if (t.includes('Tower:'))             intelligence.tower.push(t.replace('Tower:', '').trim());
+        if (t.includes('Battery:'))           intelligence.battery    = t.replace('Battery:', '').trim();
+        if (t.includes('Charging:'))          intelligence.charging   = t.replace('Charging:', '').trim();
+        if (t.includes('BLE Waves:'))         intelligence.bt         = t.replace('BLE Waves:', '').trim();
+        if (t.includes('Network OSINT:'))     intelligence.networkScan = t.replace('Network OSINT:', '').trim();
+        if (t.includes('IP-Precise:'))        intelligence.ipCity     = t.replace('IP-Precise:', '').split('|')[0].trim();
+        if (t.startsWith('IP:'))              intelligence.ip         = t.replace('IP:', '').trim();
+        if (t.includes('IMEI-Identifier:'))   intelligence.imei       = t.replace('IMEI-Identifier:', '').trim();
+        if (t.includes('SIM-Serial:'))        intelligence.simSerial  = t.replace('SIM-Serial:', '').trim();
+        if (t.includes('Operator:'))          intelligence.operator   = t.replace('Operator:', '').trim();
+        
+        // Signal extraction for localization engine
+        if (t.includes('RSSI=') || t.includes('dBm]')) intelligence.signals.push(t);
       });
       return { mainStatus: 'Emergency Tracking', intelligence };
     }
